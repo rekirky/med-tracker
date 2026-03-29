@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
+from typing import Optional
 from database import get_db
 import models
 
@@ -9,11 +10,13 @@ router = APIRouter()
 
 class UserCreate(BaseModel):
     name: str
+    gender: Optional[str] = None  # 'male' | 'female'
 
 
 class UserResponse(BaseModel):
     id: int
     name: str
+    gender: Optional[str]
 
     model_config = {"from_attributes": True}
 
@@ -25,7 +28,7 @@ def get_users(db: Session = Depends(get_db)):
 
 @router.post("/", response_model=UserResponse)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = models.User(name=user.name.strip())
+    db_user = models.User(name=user.name.strip(), gender=user.gender)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)

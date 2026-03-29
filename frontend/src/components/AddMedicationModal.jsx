@@ -1,21 +1,22 @@
 import { useState } from 'react'
 
+const FREQUENCY_OPTIONS = [
+  { value: 'on-demand', label: 'On demand' },
+  { value: 'daily',     label: 'Daily' },
+  { value: '4h',        label: 'Every 4 hours' },
+  { value: '6h',        label: 'Every 6 hours' },
+]
+
 export default function AddMedicationModal({ user, medication, onClose, onSave }) {
-  const [name, setName] = useState(medication?.name ?? '')
-  const [dosage, setDosage] = useState(medication?.dosage ?? '')
-  const [times, setTimes] = useState(medication?.scheduled_times ?? [])
-  const [newTime, setNewTime] = useState('')
-  const [notes, setNotes] = useState(medication?.notes ?? '')
-  const [saving, setSaving] = useState(false)
+  const isEdit = !!medication
 
-  const addTime = () => {
-    if (newTime && !times.includes(newTime)) {
-      setTimes([...times, newTime].sort())
-      setNewTime('')
-    }
-  }
-
-  const removeTime = (t) => setTimes(times.filter((x) => x !== t))
+  const [name, setName]           = useState(medication?.name ?? '')
+  const [dosage, setDosage]       = useState(medication?.dosage ?? '')
+  const [frequency, setFrequency] = useState(medication?.frequency ?? 'on-demand')
+  const [dailyTime, setDailyTime] = useState(medication?.daily_time ?? '')
+  const [lastTaken, setLastTaken] = useState('')   // only shown when adding new
+  const [notes, setNotes]         = useState(medication?.notes ?? '')
+  const [saving, setSaving]       = useState(false)
 
   const save = async () => {
     if (!name.trim()) return
@@ -24,10 +25,12 @@ export default function AddMedicationModal({ user, medication, onClose, onSave }
       user_id: user.id,
       name: name.trim(),
       dosage: dosage.trim() || null,
-      scheduled_times: times,
+      frequency,
+      daily_time: frequency === 'daily' ? dailyTime || null : null,
       notes: notes.trim() || null,
+      ...(!isEdit && { last_taken: lastTaken || null }),
     }
-    if (medication) {
+    if (isEdit) {
       await fetch(`/api/medications/${medication.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -44,7 +47,7 @@ export default function AddMedicationModal({ user, medication, onClose, onSave }
   }
 
   const removeMed = async () => {
-    if (!confirm(`Remove ${medication.name} from ${user.name}'s chart?\n\nThis will not delete historical logs.`))
+    if (!confirm(`Remove ${medication.name} from ${user.name}'s chart?\n\nHistorical logs will be kept.`))
       return
     await fetch(`/api/medications/${medication.id}`, { method: 'DELETE' })
     onSave()
@@ -53,7 +56,7 @@ export default function AddMedicationModal({ user, medication, onClose, onSave }
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal">
-        <h2>{medication ? 'Edit Medication' : 'Add Medication'}</h2>
+        <h2>{isEdit ? 'Edit Medication' : 'Add Medication'}</h2>
 
         <label>Medication Name *</label>
         <input
@@ -67,41 +70,54 @@ export default function AddMedicationModal({ user, medication, onClose, onSave }
         <input
           value={dosage}
           onChange={(e) => setDosage(e.target.value)}
-          placeholder="e.g. 500mg, 2 tablets"
+          placeholder="e.g. 2 tablets, 500mg"
         />
 
-        <label>Scheduled Times</label>
-        <div className="time-input-row">
-          <input
-            type="time"
-            value={newTime}
-            onChange={(e) => setNewTime(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addTime()}
-          />
-          <button className="btn-outline" onClick={addTime} type="button">
-            Add
-          </button>
-        </div>
-        <div className="chips-row">
-          {times.map((t) => (
-            <span key={t} className="chip chip-removable">
-              {t}
-              <button onClick={() => removeTime(t)} type="button" title="Remove time">
-                ×
-              </button>
-            </span>
+        <label>Frequency</label>
+        <select
+          value={frequency}
+          onChange={(e) => setFrequency(e.target.value)}
+          className="modal-select"
+        >
+          {FREQUENCY_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
           ))}
-        </div>
+        </select>
+
+        {frequency === 'daily' && (
+          <>
+            <label>Daily Time *</label>
+            <input
+              type="time"
+              value={dailyTime}
+              onChange={(e) => setDailyTime(e.target.value)}
+            />
+          </>
+        )}
+
+        {!isEdit && (
+          <>
+            <label>Last Taken Today (optional)</label>
+            <input
+              type="time"
+              value={lastTaken}
+              onChange={(e) => setLastTaken(e.target.value)}
+            />
+            <p className="field-hint">
+              Set this if the medication has already been taken today so the next-due time is accurate.
+            </p>
+          </>
+        )}
 
         <label>Notes</label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="e.g. Take with food, morning only"
+          placeholder="e.g. Take with food"
         />
 
         <div className="modal-footer">
-          {medication ? (
+          {isEdit ? (
             <button className="btn-danger" onClick={removeMed} type="button">
               Remove
             </button>
@@ -115,7 +131,7 @@ export default function AddMedicationModal({ user, medication, onClose, onSave }
             <button
               className="btn-primary"
               onClick={save}
-              disabled={!name.trim() || saving}
+              disabled={!name.trim() || (frequency === 'daily' && !dailyTime) || saving}
               type="button"
             >
               Save

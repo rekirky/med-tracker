@@ -120,6 +120,11 @@
   background: #0f2117;
 }
 
+.med-card.overdue {
+  border-color: #dc2626;
+  background: #1c0a0a;
+}
+
 .med-card-header {
   display: flex;
   justify-content: space-between;
@@ -213,6 +218,53 @@
   margin-top: 8px;
   font-size: 0.82rem;
   color: #334155;
+  font-style: italic;
+}
+
+.freq-badge {
+  font-size: 0.72rem;
+  color: #475569;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 4px;
+  padding: 1px 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.next-due {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.next-due--normal    { color: #64748b; }
+.next-due--on-demand { color: #475569; font-style: italic; }
+.next-due--taken     { color: #4ade80; }
+.next-due--due-soon  { color: #fb923c; }
+.next-due--overdue   { color: #f87171; font-weight: 600; }
+
+.modal-select {
+  width: 100%;
+  background: #0f172a;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.modal-select:focus {
+  outline: none;
+  border-color: #1d4ed8;
+}
+
+.field-hint {
+  font-size: 0.78rem;
+  color: #475569;
+  margin-top: 5px;
   font-style: italic;
 }
 

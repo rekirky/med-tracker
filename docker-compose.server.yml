@@ -1,0 +1,27 @@
+services:
+  backend:
+    image: ghcr.io/rekirky/med-tracker-backend:latest
+    container_name: medtracker-api
+    restart: unless-stopped
+    volumes:
+      - /mnt/user/appdata/medtracker:/app/data
+    environment:
+      - DATABASE_URL=sqlite:////app/data/medtracker.db
+      - TZ=Australia/Brisbane
+
+  frontend:
+    image: ghcr.io/rekirky/med-tracker-frontend:latest
+    container_name: medtracker-ui
+    restart: unless-stopped
+    ports:
+      - "2346:80"
+    depends_on:
+      - backend
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: medtracker-watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --interval 300 --cleanup medtracker-api medtracker-ui
