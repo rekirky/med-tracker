@@ -81,6 +81,8 @@ export default function TodayChart({ user }) {
   const [loading, setLoading]         = useState(false)
   const [showAddMed, setShowAddMed]   = useState(false)
   const [editMed, setEditMed]         = useState(null)
+  const [logAtMedId, setLogAtMedId]   = useState(null)   // which card has the time picker open
+  const [logAtTime, setLogAtTime]     = useState('')
 
   const fetchData = useCallback(async () => {
     const [medsRes, logsRes] = await Promise.all([
@@ -111,6 +113,29 @@ export default function TodayChart({ user }) {
   const undoLog = async (logId) => {
     await fetch(`/api/logs/${logId}`, { method: 'DELETE' })
     await fetchData()
+  }
+
+  const openLogAt = (medId) => {
+    setLogAtMedId(medId)
+    setLogAtTime('')
+  }
+
+  const cancelLogAt = () => {
+    setLogAtMedId(null)
+    setLogAtTime('')
+  }
+
+  const submitLogAt = async (med) => {
+    if (!logAtTime) return
+    setLoading(true)
+    await fetch('/api/logs/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ medication_id: med.id, user_id: user.id, taken_at: logAtTime }),
+    })
+    cancelLogAt()
+    await fetchData()
+    setLoading(false)
   }
 
   const getMedLogs = (medId) => logs.filter((l) => l.medication_id === medId)
@@ -145,11 +170,41 @@ export default function TodayChart({ user }) {
                 <button className="btn-icon" onClick={() => setEditMed(med)} title="Edit medication">
                   ✏️
                 </button>
-                <button className="btn-take" onClick={() => takeMed(med)} disabled={loading}>
-                  Take Now
-                </button>
+                <div className="btn-take-group">
+                  <button className="btn-take" onClick={() => takeMed(med)} disabled={loading}>
+                    Take Now
+                  </button>
+                  <button
+                    className="btn-take-at"
+                    onClick={() => logAtMedId === med.id ? cancelLogAt() : openLogAt(med.id)}
+                    title="Log at earlier time"
+                  >
+                    ⏱
+                  </button>
+                </div>
               </div>
             </div>
+
+            {/* Backdate entry */}
+            {logAtMedId === med.id && (
+              <div className="log-at-row">
+                <input
+                  type="time"
+                  value={logAtTime}
+                  onChange={(e) => setLogAtTime(e.target.value)}
+                  className="log-at-input"
+                  autoFocus
+                />
+                <button
+                  className="btn-take"
+                  onClick={() => submitLogAt(med)}
+                  disabled={!logAtTime || loading}
+                >
+                  Log
+                </button>
+                <button className="btn-outline" onClick={cancelLogAt}>Cancel</button>
+              </div>
+            )}
 
             {/* Next due / status row */}
             <div className={`next-due next-due--${nextDue.status}`}>

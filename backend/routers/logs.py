@@ -14,6 +14,7 @@ class LogCreate(BaseModel):
     medication_id: int
     user_id: int
     notes: Optional[str] = None
+    taken_at: Optional[str] = None  # "HH:MM" — if omitted, uses current time
 
 
 def log_to_dict(log):
@@ -32,12 +33,21 @@ def log_medication(log: LogCreate, db: Session = Depends(get_db)):
     med = db.query(models.Medication).filter(models.Medication.id == log.medication_id).first()
     if not med:
         raise HTTPException(status_code=404, detail="Medication not found")
+    if log.taken_at:
+        try:
+            h, m = map(int, log.taken_at.split(":"))
+            taken_at = datetime.now().replace(hour=h, minute=m, second=0, microsecond=0)
+        except ValueError:
+            taken_at = datetime.now()
+    else:
+        taken_at = datetime.now()
+
     db_log = models.MedicationLog(
         medication_id=log.medication_id,
         medication_name=med.name,
         user_id=log.user_id,
         notes=log.notes,
-        taken_at=datetime.now(),
+        taken_at=taken_at,
     )
     db.add(db_log)
     db.commit()
