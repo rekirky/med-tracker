@@ -13,9 +13,16 @@ export default function App() {
     const res = await fetch('/api/users/')
     const data = await res.json()
     setUsers(data)
-    if (data.length > 0 && !selectedUser) {
-      setSelectedUser(data[0])
+    if (data.length > 0) {
+      const savedId = localStorage.getItem('selectedUserId')
+      const restored = savedId ? data.find((u) => u.id === parseInt(savedId)) : null
+      setSelectedUser((prev) => prev ?? restored ?? data[0])
     }
+  }
+
+  const handleSelectUser = (user) => {
+    setSelectedUser(user)
+    localStorage.setItem('selectedUserId', user.id)
   }
 
   useEffect(() => {
@@ -41,7 +48,7 @@ export default function App() {
         <UserSelector
           users={users}
           selectedUser={selectedUser}
-          onSelect={setSelectedUser}
+          onSelect={handleSelectUser}
           onUsersChanged={fetchUsers}
         />
       </header>
