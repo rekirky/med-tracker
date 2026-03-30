@@ -16,6 +16,7 @@ export default function AddMedicationModal({ user, medication, onClose, onSave }
   const [dailyTime, setDailyTime] = useState(medication?.daily_time ?? '')
   const [lastTaken, setLastTaken] = useState('')   // only shown when adding new
   const [notes, setNotes]         = useState(medication?.notes ?? '')
+  const [isOptional, setIsOptional] = useState(medication?.is_optional ?? false)
   const [saving, setSaving]       = useState(false)
 
   const save = async () => {
@@ -28,6 +29,7 @@ export default function AddMedicationModal({ user, medication, onClose, onSave }
       frequency,
       daily_time: frequency === 'daily' ? dailyTime || null : null,
       notes: notes.trim() || null,
+      is_optional: isOptional,
       ...(!isEdit && { last_taken: lastTaken || null }),
     }
     if (isEdit) {
@@ -115,6 +117,18 @@ export default function AddMedicationModal({ user, medication, onClose, onSave }
           onChange={(e) => setNotes(e.target.value)}
           placeholder="e.g. Take with food"
         />
+
+        <div className="optional-toggle">
+          <input
+            type="checkbox"
+            id="is-optional"
+            checked={isOptional}
+            onChange={(e) => setIsOptional(e.target.checked)}
+          />
+          <label htmlFor="is-optional" className="optional-toggle-label">
+            Optional — take only when needed (won't show as overdue)
+          </label>
+        </div>
 
         <div className="modal-footer">
           {isEdit ? (

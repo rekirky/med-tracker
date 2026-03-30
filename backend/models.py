@@ -22,6 +22,7 @@ class Medication(Base):
     frequency = Column(String, default="on-demand")  # on-demand | daily | 4h | 6h
     daily_time = Column(String)  # "HH:MM" — only used when frequency == "daily"
     notes = Column(Text)
+    is_optional = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
     user = relationship("User", back_populates="medications")

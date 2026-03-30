@@ -40,8 +40,8 @@ function getNextDue(med, medLogs) {
     const dueAt = new Date()
     dueAt.setHours(h, m, 0, 0)
 
-    // Taken at or after today's scheduled time?
-    const takenToday = medLogs.some((l) => new Date(l.taken_at) >= dueAt)
+    // Taken any time today (including before the scheduled time)?
+    const takenToday = medLogs.length > 0
     if (takenToday) return { status: 'taken', label: `Taken for today ✓` }
 
     const diffMin = Math.round((dueAt - now) / 60_000)
@@ -62,14 +62,16 @@ function getNextDue(med, medLogs) {
 
   if (diffMin > 30)  return { status: 'normal',   label: `Next due ${formatTime(nextDue.toISOString())}` }
   if (diffMin >= 0)  return { status: 'due-soon', label: `Due at ${formatTime(nextDue.toISOString())}` }
+  if (med.is_optional) return { status: 'available', label: `Available since ${formatTime(nextDue.toISOString())}` }
   if (diffMin > -60) return { status: 'overdue',  label: `Overdue by ${Math.abs(diffMin)} min` }
   return { status: 'overdue', label: `Overdue by ${Math.abs(Math.round(diffMin / 60))}h ${Math.abs(diffMin % 60)}min` }
 }
 
 function statusToCardClass(status) {
-  if (status === 'taken')    return ' fully-taken'
-  if (status === 'overdue')  return ' overdue'
-  if (status === 'due-soon') return ' partially-taken'
+  if (status === 'taken')     return ' fully-taken'
+  if (status === 'overdue')   return ' overdue'
+  if (status === 'due-soon')  return ' partially-taken'
+  if (status === 'available') return ' available'
   return ''
 }
 
@@ -137,6 +139,7 @@ export default function TodayChart({ user }) {
                 <span className="med-name">{med.name}</span>
                 {med.dosage && <span className="med-dosage">{med.dosage}</span>}
                 <span className="freq-badge">{FREQUENCY_LABEL[med.frequency] ?? med.frequency}</span>
+                {med.is_optional && <span className="freq-badge optional-badge">OPTIONAL</span>}
               </div>
               <div className="med-actions-header">
                 <button className="btn-icon" onClick={() => setEditMed(med)} title="Edit medication">

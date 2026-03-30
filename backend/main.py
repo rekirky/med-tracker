@@ -15,6 +15,7 @@ def migrate_db():
             "ALTER TABLE users ADD COLUMN gender TEXT",
             "ALTER TABLE medications ADD COLUMN frequency TEXT DEFAULT 'on-demand'",
             "ALTER TABLE medications ADD COLUMN daily_time TEXT",
+            "ALTER TABLE medications ADD COLUMN is_optional INTEGER DEFAULT 0",
         ]
         for sql in migrations:
             try:

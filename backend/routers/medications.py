@@ -19,6 +19,7 @@ class MedicationCreate(BaseModel):
     daily_time: Optional[str] = None   # "HH:MM" — required when frequency == "daily"
     last_taken: Optional[str] = None   # "HH:MM" — seeds an initial log for today
     notes: Optional[str] = None
+    is_optional: bool = False
 
 
 class MedicationUpdate(BaseModel):
@@ -28,6 +29,7 @@ class MedicationUpdate(BaseModel):
     daily_time: Optional[str] = None
     notes: Optional[str] = None
     is_active: Optional[bool] = None
+    is_optional: Optional[bool] = None
 
 
 def med_to_dict(med):
@@ -39,6 +41,7 @@ def med_to_dict(med):
         "frequency": med.frequency or "on-demand",
         "daily_time": med.daily_time,
         "notes": med.notes,
+        "is_optional": bool(med.is_optional),
         "is_active": med.is_active,
     }
 
@@ -63,6 +66,7 @@ def create_medication(med: MedicationCreate, db: Session = Depends(get_db)):
         frequency=med.frequency,
         daily_time=med.daily_time if med.frequency == "daily" else None,
         notes=med.notes,
+        is_optional=med.is_optional,
     )
     db.add(db_med)
     db.flush()  # get db_med.id before committing
@@ -105,6 +109,8 @@ def update_medication(med_id: int, update: MedicationUpdate, db: Session = Depen
         med.notes = update.notes
     if update.is_active is not None:
         med.is_active = update.is_active
+    if update.is_optional is not None:
+        med.is_optional = update.is_optional
     db.commit()
     db.refresh(med)
     return med_to_dict(med)

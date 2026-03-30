@@ -125,6 +125,11 @@
   background: #1c0a0a;
 }
 
+.med-card.available {
+  border-color: #0e7490;
+  background: #0a1e24;
+}
+
 .med-card-header {
   display: flex;
   justify-content: space-between;
@@ -232,17 +237,23 @@
   letter-spacing: 0.05em;
 }
 
+.optional-badge {
+  color: #22d3ee;
+  border-color: #0e4958;
+}
+
 .next-due {
   margin-top: 8px;
   font-size: 0.85rem;
   font-weight: 500;
 }
 
-.next-due--normal    { color: #64748b; }
-.next-due--on-demand { color: #475569; font-style: italic; }
-.next-due--taken     { color: #4ade80; }
-.next-due--due-soon  { color: #fb923c; }
-.next-due--overdue   { color: #f87171; font-weight: 600; }
+.next-due--normal     { color: #64748b; }
+.next-due--on-demand  { color: #475569; font-style: italic; }
+.next-due--taken      { color: #4ade80; }
+.next-due--due-soon   { color: #fb923c; }
+.next-due--overdue    { color: #f87171; font-weight: 600; }
+.next-due--available  { color: #22d3ee; }
 
 .modal-select {
   width: 100%;
@@ -485,6 +496,30 @@
 
 .chip-removable button:hover {
   opacity: 1;
+}
+
+.optional-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.optional-toggle input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: #38bdf8;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.optional-toggle-label {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  text-transform: none;
+  letter-spacing: normal;
+  margin: 0;
+  cursor: pointer;
 }
 
 .modal-footer {
