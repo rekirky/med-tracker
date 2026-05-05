@@ -1,23 +1,34 @@
 import { useState } from 'react'
 
-const FREQUENCY_OPTIONS = [
-  { value: 'on-demand', label: 'On demand' },
-  { value: 'daily',     label: 'Daily' },
-  { value: '4h',        label: 'Every 4 hours' },
-  { value: '6h',        label: 'Every 6 hours' },
-]
+function parseFreqToState(freq) {
+  if (!freq || freq === 'on-demand') return { type: 'on-demand', value: 1 }
+  if (freq === 'daily') return { type: 'day', value: 1 }
+  const h = freq.match(/^(\d+)h$/)
+  if (h) return { type: 'hour', value: parseInt(h[1]) }
+  const d = freq.match(/^(\d+)d$/)
+  if (d) return { type: 'day', value: parseInt(d[1]) }
+  return { type: 'on-demand', value: 1 }
+}
+
+function buildFreq(type, value) {
+  if (type === 'on-demand') return 'on-demand'
+  return `${value}${type === 'hour' ? 'h' : 'd'}`
+}
 
 export default function AddMedicationModal({ user, medication, onClose, onSave }) {
   const isEdit = !!medication
+  const initFreq = parseFreqToState(medication?.frequency)
 
-  const [name, setName]           = useState(medication?.name ?? '')
-  const [dosage, setDosage]       = useState(medication?.dosage ?? '')
-  const [frequency, setFrequency] = useState(medication?.frequency ?? 'on-demand')
-  const [dailyTime, setDailyTime] = useState(medication?.daily_time ?? '')
-  const [lastTaken, setLastTaken] = useState('')   // only shown when adding new
-  const [notes, setNotes]         = useState(medication?.notes ?? '')
+  const [name, setName]         = useState(medication?.name ?? '')
+  const [dosage, setDosage]     = useState(medication?.dosage ?? '')
+  const [freqType, setFreqType] = useState(initFreq.type)
+  const [freqValue, setFreqValue] = useState(initFreq.value)
+  const [lastTaken, setLastTaken] = useState('')
+  const [notes, setNotes]       = useState(medication?.notes ?? '')
   const [isOptional, setIsOptional] = useState(medication?.is_optional ?? false)
-  const [saving, setSaving]       = useState(false)
+  const [saving, setSaving]     = useState(false)
+
+  const frequency = buildFreq(freqType, freqValue)
 
   const save = async () => {
     if (!name.trim()) return
@@ -27,7 +38,7 @@ export default function AddMedicationModal({ user, medication, onClose, onSave }
       name: name.trim(),
       dosage: dosage.trim() || null,
       frequency,
-      daily_time: frequency === 'daily' ? dailyTime || null : null,
+      daily_time: null,
       notes: notes.trim() || null,
       is_optional: isOptional,
       ...(!isEdit && { last_taken: lastTaken || null }),
@@ -55,6 +66,8 @@ export default function AddMedicationModal({ user, medication, onClose, onSave }
     onSave()
   }
 
+  const setFreqValueSafe = (v) => setFreqValue(Math.max(1, parseInt(v) || 1))
+
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal">
@@ -76,26 +89,27 @@ export default function AddMedicationModal({ user, medication, onClose, onSave }
         />
 
         <label>Frequency</label>
-        <select
-          value={frequency}
-          onChange={(e) => setFrequency(e.target.value)}
-          className="modal-select"
-        >
-          {FREQUENCY_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-
-        {frequency === 'daily' && (
-          <>
-            <label>Daily Time *</label>
+        <div className="freq-row">
+          <select
+            value={freqType}
+            onChange={(e) => setFreqType(e.target.value)}
+            className="modal-select freq-row-select"
+          >
+            <option value="on-demand">On demand</option>
+            <option value="hour">Every N hours</option>
+            <option value="day">Every N days</option>
+          </select>
+          {freqType !== 'on-demand' && (
             <input
-              type="time"
-              value={dailyTime}
-              onChange={(e) => setDailyTime(e.target.value)}
+              type="number"
+              min="1"
+              max="99"
+              value={freqValue}
+              onChange={(e) => setFreqValueSafe(e.target.value)}
+              className="freq-value-input"
             />
-          </>
-        )}
+          )}
+        </div>
 
         {!isEdit && (
           <>
@@ -145,7 +159,7 @@ export default function AddMedicationModal({ user, medication, onClose, onSave }
             <button
               className="btn-primary"
               onClick={save}
-              disabled={!name.trim() || (frequency === 'daily' && !dailyTime) || saving}
+              disabled={!name.trim() || saving}
               type="button"
             >
               Save

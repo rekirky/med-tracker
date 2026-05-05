@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import AddMedicationModal from './AddMedicationModal'
 
-const FREQUENCY_LABEL = {
-  'on-demand': 'On demand',
-  'daily':     'Daily',
-  '4h':        'Every 4h',
-  '6h':        'Every 6h',
+function freqLabel(freq) {
+  if (!freq || freq === 'on-demand') return 'On demand'
+  if (freq === 'daily') return 'Daily'
+  const h = freq.match(/^(\d+)h$/)
+  if (h) return `Every ${h[1]}h`
+  const d = freq.match(/^(\d+)d$/)
+  if (d) return parseInt(d[1]) === 1 ? 'Daily' : `Every ${d[1]} days`
+  return freq
 }
 
 function formatTime(isoStr) {
@@ -50,21 +53,30 @@ function getNextDue(med, medLogs) {
     return { status: 'overdue', label: `Overdue by ${Math.abs(diffMin)} min` }
   }
 
-  // 4h or 6h
-  const hours = med.frequency === '4h' ? 4 : 6
-  if (medLogs.length === 0) {
-    return { status: 'normal', label: `Every ${hours}h — not yet taken` }
-  }
+  // interval-based: Xh or Xd (also handles legacy 4h / 6h)
+  const hMatch = med.frequency?.match(/^(\d+)h$/)
+  const dMatch = med.frequency?.match(/^(\d+)d$/)
+  const intervalMs = hMatch
+    ? parseInt(hMatch[1]) * 3_600_000
+    : dMatch
+    ? parseInt(dMatch[1]) * 86_400_000
+    : null
 
-  const lastTaken = new Date(medLogs[medLogs.length - 1].taken_at)
-  const nextDue = new Date(lastTaken.getTime() + hours * 3_600_000)
+  if (intervalMs === null) return { status: 'normal', label: med.frequency }
+
+  const label = freqLabel(med.frequency)
+  if (medLogs.length === 0) return { status: 'normal', label: `${label} — not yet taken` }
+
+  const lastLog = new Date(medLogs[medLogs.length - 1].taken_at)
+  const nextDue = new Date(lastLog.getTime() + intervalMs)
   const diffMin = Math.round((nextDue - now) / 60_000)
 
   if (diffMin > 30)  return { status: 'normal',   label: `Next due ${formatTime(nextDue.toISOString())}` }
   if (diffMin >= 0)  return { status: 'due-soon', label: `Due at ${formatTime(nextDue.toISOString())}` }
   if (med.is_optional) return { status: 'available', label: `Available since ${formatTime(nextDue.toISOString())}` }
-  if (diffMin > -60) return { status: 'overdue',  label: `Overdue by ${Math.abs(diffMin)} min` }
-  return { status: 'overdue', label: `Overdue by ${Math.abs(Math.round(diffMin / 60))}h ${Math.abs(diffMin % 60)}min` }
+  const absMin = Math.abs(diffMin)
+  if (absMin < 60)   return { status: 'overdue', label: `Overdue by ${absMin} min` }
+  return { status: 'overdue', label: `Overdue by ${Math.floor(absMin / 60)}h ${absMin % 60}min` }
 }
 
 function statusToCardClass(status) {
@@ -163,7 +175,7 @@ export default function TodayChart({ user }) {
               <div className="med-info">
                 <span className="med-name">{med.name}</span>
                 {med.dosage && <span className="med-dosage">{med.dosage}</span>}
-                <span className="freq-badge">{FREQUENCY_LABEL[med.frequency] ?? med.frequency}</span>
+                <span className="freq-badge">{freqLabel(med.frequency)}</span>
                 {med.is_optional && <span className="freq-badge optional-badge">OPTIONAL</span>}
               </div>
               <div className="med-actions-header">

@@ -255,6 +255,22 @@
 .next-due--overdue    { color: #f87171; font-weight: 600; }
 .next-due--available  { color: #22d3ee; }
 
+.freq-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.freq-row-select {
+  flex: 1;
+}
+
+.freq-value-input {
+  width: 64px !important;
+  text-align: center;
+  flex-shrink: 0;
+}
+
 .modal-select {
   width: 100%;
   background: #0f172a;

@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -8,7 +9,10 @@ import models
 
 router = APIRouter()
 
-VALID_FREQUENCIES = {"on-demand", "daily", "4h", "6h"}
+_FREQ_RE = re.compile(r'^(on-demand|\d+h|\d+d)$')
+
+def _valid_freq(f: str) -> bool:
+    return bool(_FREQ_RE.match(f))
 
 
 class MedicationCreate(BaseModel):
@@ -56,7 +60,7 @@ def get_user_medications(user_id: int, active_only: bool = True, db: Session = D
 
 @router.post("/")
 def create_medication(med: MedicationCreate, db: Session = Depends(get_db)):
-    if med.frequency not in VALID_FREQUENCIES:
+    if not _valid_freq(med.frequency):
         raise HTTPException(status_code=400, detail=f"Invalid frequency: {med.frequency}")
 
     db_med = models.Medication(
@@ -100,7 +104,7 @@ def update_medication(med_id: int, update: MedicationUpdate, db: Session = Depen
     if update.dosage is not None:
         med.dosage = update.dosage
     if update.frequency is not None:
-        if update.frequency not in VALID_FREQUENCIES:
+        if not _valid_freq(update.frequency):
             raise HTTPException(status_code=400, detail=f"Invalid frequency: {update.frequency}")
         med.frequency = update.frequency
     if update.daily_time is not None:
