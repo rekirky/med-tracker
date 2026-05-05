@@ -22,13 +22,14 @@ export default function AddMedicationModal({ user, medication, onClose, onSave }
   const [name, setName]         = useState(medication?.name ?? '')
   const [dosage, setDosage]     = useState(medication?.dosage ?? '')
   const [freqType, setFreqType] = useState(initFreq.type)
-  const [freqValue, setFreqValue] = useState(initFreq.value)
+  const [freqValue, setFreqValue] = useState(String(initFreq.value))
   const [lastTaken, setLastTaken] = useState('')
   const [notes, setNotes]       = useState(medication?.notes ?? '')
   const [isOptional, setIsOptional] = useState(medication?.is_optional ?? false)
   const [saving, setSaving]     = useState(false)
 
-  const frequency = buildFreq(freqType, freqValue)
+  const freqNum = Math.max(1, parseInt(freqValue) || 1)
+  const frequency = buildFreq(freqType, freqNum)
 
   const save = async () => {
     if (!name.trim()) return
@@ -66,7 +67,6 @@ export default function AddMedicationModal({ user, medication, onClose, onSave }
     onSave()
   }
 
-  const setFreqValueSafe = (v) => setFreqValue(Math.max(1, parseInt(v) || 1))
 
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -96,16 +96,17 @@ export default function AddMedicationModal({ user, medication, onClose, onSave }
             className="modal-select freq-row-select"
           >
             <option value="on-demand">On demand</option>
-            <option value="hour">Every N hours</option>
-            <option value="day">Every N days</option>
+            <option value="hour">Every X hours</option>
+            <option value="day">Every X days</option>
           </select>
           {freqType !== 'on-demand' && (
             <input
               type="number"
-              min="1"
-              max="99"
+              inputMode="numeric"
               value={freqValue}
-              onChange={(e) => setFreqValueSafe(e.target.value)}
+              onChange={(e) => setFreqValue(e.target.value)}
+              onFocus={(e) => e.target.select()}
+              onBlur={(e) => setFreqValue(String(Math.max(1, parseInt(e.target.value) || 1)))}
               className="freq-value-input"
             />
           )}
