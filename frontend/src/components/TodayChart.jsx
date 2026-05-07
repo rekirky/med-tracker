@@ -70,8 +70,16 @@ function getNextDue(med, medLogs) {
   const lastLog = new Date(medLogs[medLogs.length - 1].taken_at)
   const nextDue = new Date(lastLog.getTime() + intervalMs)
   const diffMin = Math.round((nextDue - now) / 60_000)
+  const diffH   = diffMin / 60
 
-  if (diffMin > 30)  return { status: 'normal',   label: `Next due ${formatTime(nextDue.toISOString())}` }
+  if (diffMin > 30) {
+    const nextLabel = diffH < 24
+      ? `next due ${formatTime(nextDue.toISOString())}`
+      : diffH < 48
+      ? `next due tomorrow ${formatTime(nextDue.toISOString())}`
+      : `next due in ${Math.round(diffH / 24)} days`
+    return { status: 'taken', label: `Taken ✓ — ${nextLabel}` }
+  }
   if (diffMin >= 0)  return { status: 'due-soon', label: `Due at ${formatTime(nextDue.toISOString())}` }
   if (med.is_optional) return { status: 'available', label: `Available since ${formatTime(nextDue.toISOString())}` }
   const absMin = Math.abs(diffMin)
@@ -168,6 +176,17 @@ export default function TodayChart({ user }) {
         const medLogs  = getMedLogs(med.id)
         const nextDue  = getNextDue(med, medLogs)
         const cardClass = statusToCardClass(nextDue.status)
+
+        if (nextDue.status === 'taken') {
+          return (
+            <div key={med.id} className="med-card-collapsed">
+              <span className="med-name-collapsed">{med.name}</span>
+              {med.dosage && <span className="med-dosage">{med.dosage}</span>}
+              <span className="med-collapsed-due">{nextDue.label}</span>
+              <button className="btn-icon" onClick={() => setEditMed(med)} title="Edit medication">✏️</button>
+            </div>
+          )
+        }
 
         return (
           <div key={med.id} className={`med-card${cardClass}`}>
